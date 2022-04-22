@@ -67,6 +67,8 @@ module.exports = {
     docsDir: "docs",
 
     defaultURL: "/installation/",
+    submitRequestURL: "https://tuxcare.zendesk.com/hc/en-us",
+    hideHeading: true,
     redirectionMapping: urls,
     sidebarDepth: 2,
     logo: "/logo.svg",
@@ -93,6 +95,7 @@ module.exports = {
         // text for the edit-on-github link
         editLinkText: "Edit this page",
         tryFree: "Try Free",
+        submitRequest: "Contact Support",
         search: "Search",
         // config for Service Worker
         serviceWorker: {
@@ -117,7 +120,7 @@ module.exports = {
           },
           {
             text: "Contact support",
-            url: "https://cloudlinux.zendesk.com/hc/en-us/requests/new"
+            url: "https://tuxcare.zendesk.com/hc/en-us"
           },
           { text: "Blog", url: "https://blog.kernelcare.com/" }
         ],
@@ -185,7 +188,7 @@ module.exports = {
             },
             {
                 text: "サポート",
-                url: "https://cloudlinux.zendesk.com/hc/en-us/requests/new"
+                url: "https://tuxcare.zendesk.com/hc/en-us"
             },
             { text: "ブログ", url: "https://blog.kernelcare.com/" }
         ],
