@@ -1175,7 +1175,7 @@ For one leader and two follower setup:
 follower1       follower2
 ```
 
-there is a chance to lost a `leader` node and `follower1`/`follower2` will not
+there is a chance to lose a `leader` node and `follower1`/`follower2` will not
 communicate with each other. To mitigate this issue, you can deploy a ring
 replication:
 
