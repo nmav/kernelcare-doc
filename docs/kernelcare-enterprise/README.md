@@ -1012,6 +1012,200 @@ For example:
 curl --user admin:admin-password -X POST http://your-eportal-domain/admin/api/delete_server?ip=192.168.1.1
 ```
 
+### Ansible playbook
+
+Integrating ePortal API access with Ansible is now possible. Rather than calling the kernelcare agent to perform tasks, it is possible to replace it with direct calls to ePortal to achieve the same results.
+
+You can create a separate ePortal account for API usage with:
+
+```
+kc.eportal -a api-user -p <password>
+```
+
+Unregister KernelCare agent through API playbook:
+
+```json
+- hosts: kernelcare
+  vars:
+    eportal_srv: http://eportal.address.here[:port if needed]
+
+  tasks:
+    - name: unregister kernelcare agent through API
+      uri:
+        url: "{{ eportal_srv }}/admin/api/delete_server?ip={{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}"
+        method: POST
+        user: your-api-user
+        password: your-api-user-password
+        force_basic_auth: yes
+```
+
+Example:
+
+```json
+- hosts: kernelcare
+  vars:
+    eportal_srv: http://192.168.246.110
+
+  tasks:
+    - name: unregister kernelcare agent through API
+      uri:
+        url: "{{ eportal_srv }}/admin/api/delete_server?ip={{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}"
+        method: POST
+        user: api-user
+        password: dummy
+        force_basic_auth: yes
+```
+
+Ad hoc run with:
+
+```
+ansible-playbook -u ansible  ./kernelcare.yml
+```
+
+This can be called during machine tear down to properly remove the server from ePortal.
+
+### Chef recipe
+
+Having tighter integration with automation tools like Chef has always been a goal for KernelCare and related tools like ePortal. The following recipe demonstrates how to use the delete_server api to correctly remove a server from ePortal during tear down, and can be integrated with your other recipes to avoid manual operations.
+
+You can create a separate ePortal account for API usage with:
+
+```
+kc.eportal -a api-user -p <password>
+```
+
+Unregister KernelCare agent through API recipe:
+
+```json
+eportal_url = "EPORTAL URL"
+eportal_user = "EPORTAL API USER NAME"
+eportal_password = "EPORTAL API USER PASSWORD"
+
+# the ip to unregister can be pulled automatically from the system where the recipe is applied, or specified manually (by replacing the following line with a simple assignment)
+ip_to_unregister = "#{node['network']['interfaces'][node['network']['default_interface']]['addresses'].select{|k,v| v['family'] == "inet"}.keys.first}"
+
+
+http_request "kernelcare-unregister-api" do
+  url "#{eportal_url}/admin/api/delete_server?ip=#{ip_to_unregister}"
+  action :post
+  headers({'AUTHORIZATION' => "Basic #{
+    Base64.encode64("#{eportal_user}:#{eportal_password}")}",
+  })
+end
+```
+
+Example (kernelcare-unregister-api.rb):
+
+```json
+eportal_url = "http://192.168.246.110"
+eportal_user = "api-user"
+eportal_password = "dummy"
+
+ip_to_unregister = "#{node['network']['interfaces'][node['network']['default_interface']]['addresses'].select{|k,v| v['family'] == "inet"}.keys.first}"
+
+http_request "kernelcare-unregister-api" do
+  url "#{eportal_url}/admin/api/delete_server?ip=#{ip_to_unregister}"
+  action :post
+  headers({'AUTHORIZATION' => "Basic #{
+    Base64.encode64("#{eportal_user}:#{eportal_password}")}",
+  })
+end
+```
+
+Ad hoc run with:
+
+```
+chef-apply kernelcare-unregister-api.rb
+```
+
+Output:
+
+```json
+Recipe: (chef-apply cookbook)::(chef-apply recipe)
+  * http_request[kernelcare-unregister-api] action post
+    - http_request[kernelcare-unregister-api] POST to http://192.168.246.110/admin/api/delete_server?ip=192.168.246.40
+```
+
+This can be called during machine tear down to properly remove the server from ePortal.
+
+### Puppet plan
+
+Puppet provides the framework to run tasks on target systems. The following is a bash script that can run as such a task and demonstrates how to use the delete_server api to correctly remove a server from ePortal during tear down. It can be integrated with your other removal scripts or tasks to avoid manual operations.
+
+You can create a separate ePortal account for API usage with:
+
+```
+kc.eportal -a api-user -p <password>
+```
+
+Unregister KernelCare agent through API call:
+
+```bash
+#!/bin/bash
+
+EPORTAL_API_USERNAME=<your ePortal api user name>
+EPORTAL_API_PASSWORD=<your ePortal api user password>
+EPORTAL_URL='your ePortal URL'
+
+#this is taken from the primary ip in the system. If awk is available, it is used, but a fallback using other common tools is also provided
+if hash awk 2>/dev/null; then
+        IP_TO_UNREGISTER=`ip route get 1 | awk '{print $(NF-2);exit}'`     # using awk
+else
+        IP_TO_UNREGISTER=`ip route get 1 | cut -f 3 -d" "| head -1`        # simpler alternative for when awk is not available
+fi
+
+curl -kL -u "${EPORTAL_API_PASSWORD}"':'"${EPORTAL_API_PASSWORD}" -X POST "${EPORTAL_URL}"'/admin/api/delete_server?ip='"${IP_TO_UNREGISTER}"
+```
+
+Example (unregister_server.sh):
+
+```bash
+#!/bin/bash
+
+EPORTAL_API_USERNAME=admin
+EPORTAL_API_PASSWORD=admin
+EPORTAL_URL='http://192.168.246.110'
+
+#this is taken from the primary ip in the system. If you want to pick a different one, adjust the next line.
+if hash awk 2>/dev/null; then
+        IP_TO_UNREGISTER=`ip route get 1 | awk '{print $(NF-2);exit}'`     # using awk
+else
+        IP_TO_UNREGISTER=`ip route get 1 | cut -f 3 -d" "| head -1`        # simpler alternative for when awk is not available
+fi
+
+curl -kL -u "${EPORTAL_API_PASSWORD}"':'"${EPORTAL_API_PASSWORD}" -X POST "${EPORTAL_URL}"'/admin/api/delete_server?ip='"${IP_TO_UNREGISTER}"
+```
+
+#### Puppet Plan
+
+If you prefer to have a plan rather than a task, then you can create one from this script with the following steps:
+
+* Create a new directory called `eportal_puppet`
+* Inside this directory, create a bolt project:
+  ```
+  bolt project init
+  ```
+* Create a scripts directory inside it
+* Place the script above inside of it (call it `unregister_server.sh`)
+* Create the bolt plan using:
+  ```
+  bolt plan new eportal_puppet::unregister_server --script eportal_puppet/scripts/unregister_server.sh
+  ```
+* Now your plan is ready and can be called directly with:
+  ```
+  bolt plan run eportal_puppet:unregister_server -t <TARGETS>
+  ```
+
+Ad hoc run example with:
+
+```
+bolt plan run eportal_puppet::unregister_server -t 192.168.246.110
+```
+
+This can be called during machine tear down to properly remove the server from ePortal.
+
+
+
 
 ## How to setup ePortal to use HTTPS
 
