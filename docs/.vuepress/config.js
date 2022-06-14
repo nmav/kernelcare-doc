@@ -153,7 +153,8 @@ module.exports = {
               "/kernelcare-whmcs-plugin/",
               "/proxy-settings/",
               "/eol-ubuntu-lts-kernels-support/",
-              "/uefi-secure-boot/"
+              "/uefi-secure-boot/",
+              "/oval-data/"
             ]
           }
         ]
