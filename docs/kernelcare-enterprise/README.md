@@ -1,3 +1,6 @@
+---
+sidebarDepth: 1
+---
 
 # ePortal
 
@@ -181,9 +184,9 @@ ePortal supports SOCKS5 proxy via `socks5://` proxy scheme:
 PROXY = 'socks5://example.com:1080'
 ```
 
-
 Restart ePortal (see [Stopping & Starting](#stopping-starting)
 section, choose a corresponding OS).
+
 
 ## Auth configuration
 
@@ -762,6 +765,18 @@ Count | Key
     2 | 6J89aS44j6OmTr05
 ```
 
+### Clean inactive servers
+
+Servers inactive for more than 30 days can be removed using the followed command:
+
+```
+$ kc.eportal server clean --inactive
+2 servers were deleted
+```
+
+Clean-up of inactive servers can be performed automatically every day or rarer.
+To enable daily auto clean-up, you can add an option `CLEAN_INACTIVE_SERVERS_PERIOD = 3600 * 24` (value in seconds)
+in the [ePortal config file](#config-files).
 
 ### Show extended check-in statistics in admin UI
 
@@ -911,6 +926,16 @@ Where `""` is a parameter to delete the previously defined tag.
 
 ## ePortal API
 
+You may need to create a separate ePortal account for API usage with:
+
+```
+kc.eportal -a api-user -p <password>
+```
+
+It can be useful for SSO/LDAP setups to be able to pass HTTP API credentials via
+basic auth.
+
+
 ### GET /admin/api/servers
 
 Filters servers on various criteria, iterate through list and get
@@ -1012,15 +1037,17 @@ For example:
 curl --user admin:admin-password -X POST http://your-eportal-domain/admin/api/delete_server?ip=192.168.1.1
 ```
 
-### Ansible playbook
+Below are examples of using `/admin/api/delete_server` endpoint with various
+CM products. Take note, you need a host IP or a hostname to delete it via API.
+It can be more convenient to use on of:
+
+* if you have an access to a host (it is alive) it's a way more simpler to call `kcarectl --unregister` to delete the host.
+* if host is already destroyed you can consider using bulk [inactive server cleanup](#clean-inactive-servers).
+
+
+#### Ansible playbook
 
 Integrating ePortal API access with Ansible is now possible. Rather than calling the kernelcare agent to perform tasks, it is possible to replace it with direct calls to ePortal to achieve the same results.
-
-You can create a separate ePortal account for API usage with:
-
-```
-kc.eportal -a api-user -p <password>
-```
 
 Unregister KernelCare agent through API playbook:
 
@@ -1064,15 +1091,9 @@ ansible-playbook -u ansible  ./kernelcare.yml
 
 This can be called during machine tear down to properly remove the server from ePortal.
 
-### Chef recipe
+#### Chef recipe
 
 Having tighter integration with automation tools like Chef has always been a goal for KernelCare and related tools like ePortal. The following recipe demonstrates how to use the delete_server api to correctly remove a server from ePortal during tear down, and can be integrated with your other recipes to avoid manual operations.
-
-You can create a separate ePortal account for API usage with:
-
-```
-kc.eportal -a api-user -p <password>
-```
 
 Unregister KernelCare agent through API recipe:
 
@@ -1128,15 +1149,9 @@ Recipe: (chef-apply cookbook)::(chef-apply recipe)
 
 This can be called during machine tear down to properly remove the server from ePortal.
 
-### Puppet plan
+#### Puppet task
 
 Puppet provides the framework to run tasks on target systems. The following is a bash script that can run as such a task and demonstrates how to use the delete_server api to correctly remove a server from ePortal during tear down. It can be integrated with your other removal scripts or tasks to avoid manual operations.
-
-You can create a separate ePortal account for API usage with:
-
-```
-kc.eportal -a api-user -p <password>
-```
 
 Unregister KernelCare agent through API call:
 
@@ -1203,8 +1218,6 @@ bolt plan run eportal_puppet::unregister_server -t 192.168.246.110
 ```
 
 This can be called during machine tear down to properly remove the server from ePortal.
-
-
 
 
 ## How to setup ePortal to use HTTPS
@@ -1514,10 +1527,41 @@ curl -s http://your-eportal-domain/set-patch-server | bash
 through ePortal.
 * `set-patch-server` configures new address of patch server.
 
+
 ## Migrate ePortal
 
-Here is a procedure to migrate feed/server/key configuration data from one ePortal
-to another. ePortal version on a new host should be >=1.18.
+Here is a procedure to migrate feed/server/key configuration and patches data from one ePortal
+to another. ePortal version on a new host should be >=1.18 and equal or greater
+than on an old host.
+
+If you migrate from Debian-based to Debian-based system you can simply:
+
+* Stop ePortal on both hosts.
+* Copy `/var/lib/eportal` to a new host. Note: directory owner must stay as `eportal:eportal`.
+* Copy config `/etc/eportal/config` if it exists.
+* Run migration `/usr/share/kcare-eportal/migratedb.py --upgrade` on a new host.
+* Start ePortal on a new host.
+
+Migration from RHEL-based distro is more elaborate. Later we refer to a `$BASE_DIR` variable in scripts.
+You can export it for RHEL-based distros:
+
+```
+export BASE_DIR=/usr/share/kcare-eportal
+```
+
+or for Debian-based distros:
+
+```
+export BASE_DIR=/var/lib/eportal
+```
+
+or for docker-based installation use corresponding data directory. For example if you
+run container as `docker run -v /var/lib/eportal/data:/var/lib/eportal/data kernelcare/eportal`
+use /var/lib/eportal/data as `$BASE_DIR`:
+
+```
+export BASE_DIR=/var/lib/eportal/data
+```
 
 * Stop ePortal on both hosts:
 
@@ -1532,19 +1576,37 @@ to another. ePortal version on a new host should be >=1.18.
 * Remove db files on a new host:
 
   ```
-  [new-host ~]# rm /usr/share/kcare-eportal/data.sqlite*
+  [new-host ~]# rm $BASE_DIR/*.sqlite*
   ```
 
-* Copy `/usr/share/kcare-eportal/data.sqlite` to a new host.
+* Copy database files `$BASE_DIR/*.sqlite*` from an old host to a new host.
 
-* If you want to preserve same LDAP and Feed Source settings, additionally copy
-  `/usr/share/kcare-eportal/config/config.json`
+* (Optional) copy runtime LDAP and Feed Source settings `$BASE_DIR/config/config.json`.
 
-* Start eportal on both hosts:
+* (Optional) copy ePortal web app settings `/usr/share/kcare-eportal/config/local.py`
+  or for new ePortal `/etc/eportal/config` to `/etc/eportal/config` on a new
+  host if it exists.
+
+* Copy `$BASE_DIR/instance-id` so our billing can know that the new ePortal was
+  migrated and to avoid double billing.
+
+* Copy patch data `$BASE_DIR/{arch,resources,user-resources}` to a new host.
+
+* Set file owner. For RHEL-based distros:
 
   ```
-  [old-host ~]# systemctl start eportal
+  [new-host ~]# chown -R nginx:nginx $BASE_DIR
   ```
+
+  For Debian-based distros:
+
+  ```
+  [new-host ~]# chown -R eportal:eportal $BASE_DIR
+  ```
+
+* Run migration `/usr/share/kcare-eportal/migratedb.py --upgrade` on a new host.
+
+* Start ePortal on the new host:
 
   ```
   [new-host ~]# systemctl start eportal
