@@ -1375,6 +1375,31 @@ the follower instance:
 [root@eportal2.corp]$ kc.eportal replication --full-sync
 ```
 
+### Monitoring
+
+You can use `kc.eportal replication --short-status` CLI command to check replication
+status. It exits with code `1` if there are some issues with replication and
+outputs JSON:
+
+```json
+{
+  "ok": true,       // overall health status
+  "lag": 1,         // overall replication lag in seconds
+  "last_sync": 1,   // overall sync delta in seconds (how many seconds ago was successful communication with an upstream)
+  "upstream": {     // per upstream metrics
+    "node2": {
+      "ok": true
+      "lag": 1,
+      "last_sync": 1,
+    },
+    "node3": {
+      "ok": true
+      "lag": 1,
+      "last_sync": 1,
+    }
+  }
+}
+```
 
 ### Other replication setups
 
