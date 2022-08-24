@@ -67,7 +67,7 @@ module.exports = {
     docsDir: "docs",
 
     defaultURL: "/installation/",
-    submitRequestURL: "https://tuxcare.zendesk.com/hc/en-us",
+    submitRequestURL: "https://cloudlinux.zendesk.com/hc/en-us/requests/new",
     hideHeading: true,
     redirectionMapping: urls,
     sidebarDepth: 2,
@@ -119,8 +119,8 @@ module.exports = {
             url: "https://www.kernelcare.com/faqs/"
           },
           {
-            text: "Contact support",
-            url: "https://tuxcare.zendesk.com/hc/en-us"
+            text: "Support portal",
+            url: "https://www.cloudlinux.com/support-portal/"
           },
           { text: "Blog", url: "https://blog.kernelcare.com/" }
         ],
@@ -189,7 +189,7 @@ module.exports = {
             },
             {
                 text: "サポート",
-                url: "https://tuxcare.zendesk.com/hc/en-us"
+                url: "https://cloudlinux.zendesk.com/hc/en-us/requests/new"
             },
             { text: "ブログ", url: "https://blog.kernelcare.com/" }
         ],
