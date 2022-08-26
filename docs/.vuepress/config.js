@@ -75,11 +75,11 @@ module.exports = {
     try_free: "https://www.kernelcare.com/free-trial/",
 
     social: [
-      { url: "https://www.facebook.com/kernelcare/", logo: "/fb.png" },
-      { url: "https://twitter.com/kernelcare/", logo: "/tw.png" },
-      { url: "https://linkedin.com/company/cloudlinux", logo: "/in.png" },
+      { url: "https://www.facebook.com/TuxCare", logo: "/fb.png" },
+      { url: "https://twitter.com/TuxCare_", logo: "/tw.png" },
+      { url: "https://www.linkedin.com/showcase/tuxcare", logo: "/in.png" },
       {
-        url: "https://www.youtube.com/channel/UCZ3YMHWnMP7TaxlXVay5-aw",
+        url: "https://www.youtube.com/channel/UCr4GTupdSlC33wfwAGk3jsA/%20Fa",
         logo: "/ytube.png"
       }
     ],
