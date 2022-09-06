@@ -41,6 +41,13 @@ module.exports = {
   head: [
       ["script", { src: "https://js.hs-scripts.com/5408110.js" }], // HubSpot
       ["script", { src: "/scripts/scroll-to-hash.js"}],
+      [
+        "meta",
+        {
+          "http-equiv": "Content-Security-Policy",
+          content: "script-src 'self' 'unsafe-inline' 'unsafe-inline' 'unsafe-eval' *.survicate.com *.googletagmanager.com *.google-analytics.com *.licdn.com *.hotjar.com *.twitter.com *.facebook.net *.kernelcare.info *.twitter.com *.ads-twitter.com;"
+        }
+      ],
       ["link", { rel: "icon", href: "/favicon.ico" }]
   ],
   fbPixelID: "645174729237247", // facebook pixel
